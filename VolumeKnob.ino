@@ -2,10 +2,15 @@
 #include <BfButton.h>
 
 const long RIGHT_LEFT_DELAY = 100;
+const long PARING_DELAY = 2500;
+
 Encoder enc(2, 3);
 
 long oldPos = 0;
 long lastRotation = 0;
+long paringMillis = 0;
+unsigned int paringCount;
+boolean paring = false;
 
 String RIGHT = "RIGHT";
 String LEFT = "LEFT";
@@ -25,6 +30,10 @@ void setup() {
 void loop() {
   rotation();
   btn.read();
+
+  if (paring) {
+    Serial.println("Paring...");
+  }
 }
 
 void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
@@ -32,12 +41,27 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
   switch (pattern) {
     case BfButton::SINGLE_PRESS:
       Serial.println(" pressed.");
+      if (!paring) {
+        if (paringCount == 0) {
+          paringMillis = millis();
+        }
+        paringCount++;
+        if (millis() - paringMillis > PARING_DELAY || paringCount > 3) {
+          paringCount = 0;
+        }
+      } else {
+        paringCount = 0;
+        paring = false;
+      }
       break;
     case BfButton::DOUBLE_PRESS:
       Serial.println(" double pressed.");
       break;
     case BfButton::LONG_PRESS:
       Serial.println(" long pressed.");
+      if (paringCount == 3) {
+        paring = true;
+      }
       break;
   }
 }
