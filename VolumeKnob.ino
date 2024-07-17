@@ -1,4 +1,5 @@
 #include <Encoder.h>
+#include <BfButton.h>
 
 const long RIGHT_LEFT_DELAY = 100;
 Encoder enc(2, 3);
@@ -9,17 +10,36 @@ long lastRotation = 0;
 String RIGHT = "RIGHT";
 String LEFT = "LEFT";
 
+BfButton btn(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
+
 boolean ratationRunning = false;
 
 void setup() {
   Serial.begin(9600);
   pinMode(4, INPUT_PULLUP);
+  btn.onPress(pressHandler)
+    .onDoublePress(pressHandler)  // default timeout
+    .onPressFor(pressHandler, 1000);
 }
 
 void loop() {
   rotation();
+  btn.read();
+}
 
-  if (!digitalRead(4)) Serial.println("Clicked");
+void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
+  Serial.print(btn->getID());
+  switch (pattern) {
+    case BfButton::SINGLE_PRESS:
+      Serial.println(" pressed.");
+      break;
+    case BfButton::DOUBLE_PRESS:
+      Serial.println(" double pressed.");
+      break;
+    case BfButton::LONG_PRESS:
+      Serial.println(" long pressed.");
+      break;
+  }
 }
 
 void rotation() {
