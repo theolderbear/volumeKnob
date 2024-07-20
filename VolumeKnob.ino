@@ -18,7 +18,7 @@ boolean paring = false;
 String RIGHT = "RIGHT";
 String LEFT = "LEFT";
 
-boolean ratationRunning = false;
+boolean rotationRunning = false;
 
 BfButton btn(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
 Encoder enc(2, 3);
@@ -86,8 +86,8 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
 
 void rotation() {
 
-  if (!ratationRunning) {
-    ratationRunning = true;
+  if (!rotationRunning) {
+    rotationRunning = true;
 
     long pos = enc.read();
 
@@ -107,6 +107,6 @@ void rotation() {
 }
 
 void endRotation(long pos) {
-  ratationRunning = false;
+  rotationRunning = false;
   oldPos = pos;
 }
