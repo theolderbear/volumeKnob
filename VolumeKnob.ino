@@ -1,27 +1,33 @@
 #include <Encoder.h>
 #include <BfButton.h>
+#include "BearRGBLed.h"
 
 const long RIGHT_LEFT_DELAY = 100;
 const long PARING_DELAY = 2500;
+const int BLINK_DELAY = 2000;
 
-Encoder enc(2, 3);
+int buttonPin = 4;
 
 long oldPos = 0;
 long lastRotation = 0;
 long paringMillis = 0;
 unsigned int paringCount;
+
 boolean paring = false;
 
 String RIGHT = "RIGHT";
 String LEFT = "LEFT";
 
-BfButton btn(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
-
 boolean ratationRunning = false;
+
+BfButton btn(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
+Encoder enc(2, 3);
+BearRGBLed rgbLed(5, 6, 7);
+RGBColor blu(0, 0, 255);
 
 void setup() {
   Serial.begin(9600);
-  pinMode(4, INPUT_PULLUP);
+  pinMode(buttonPin, INPUT_PULLUP);
   btn.onPress(pressHandler)
     .onDoublePress(pressHandler)  // default timeout
     .onPressFor(pressHandler, 1000);
@@ -33,6 +39,17 @@ void loop() {
 
   if (paring) {
     Serial.println("Paring...");
+  }
+
+  setLedColor();
+
+}
+
+void setLedColor() {
+  if (paring) {
+    rgbLed.setColor(blu);
+  } else {
+    rgbLed.off();
   }
 }
 
@@ -58,7 +75,8 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
       Serial.println(" double pressed.");
       break;
     case BfButton::LONG_PRESS:
-      Serial.println(" long pressed.");
+      Serial.print(" long pressed.");
+      Serial.println(paringCount);
       if (paringCount == 3) {
         paring = true;
       }
@@ -77,7 +95,7 @@ void rotation() {
       endRotation(pos);
       return;
     }
-    // Serial.println(pos);
+
 
     lastRotation = millis();
     String command = pos > oldPos ? RIGHT : LEFT;
