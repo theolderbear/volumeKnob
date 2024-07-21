@@ -4,7 +4,7 @@
 
 const long RIGHT_LEFT_DELAY = 100;
 const long PARING_DELAY = 2500;
-const int BLINK_DELAY = 2000;
+const int BLINK_DELAY = 250;
 
 int buttonPin = 4;
 
@@ -37,19 +37,14 @@ void loop() {
   rotation();
   btn.read();
 
-  if (paring) {
-    Serial.println("Paring...");
-  }
-
-  setLedColor();
-
+  rgbLed.keepBlinking();
 }
 
 void setLedColor() {
   if (paring) {
     rgbLed.setColor(blu);
   } else {
-    rgbLed.off();
+    rgbLed.stopBlinking();
   }
 }
 
@@ -69,16 +64,22 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
       } else {
         paringCount = 0;
         paring = false;
+        rgbLed.stopBlinking();
       }
       break;
     case BfButton::DOUBLE_PRESS:
       Serial.println(" double pressed.");
+
       break;
     case BfButton::LONG_PRESS:
       Serial.print(" long pressed.");
       Serial.println(paringCount);
+
+      paring = true;
+      rgbLed.blink(BLINK_DELAY, blu);
       if (paringCount == 3) {
         paring = true;
+        
       }
       break;
   }
