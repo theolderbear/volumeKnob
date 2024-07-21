@@ -9,7 +9,7 @@ class BearRGBLed {
 		BearRGBLed(int redPin, int greenPin, int bluPin);
 		void blink(int blinkRate, RGBColor color);
     void keepBlinking();
-    void setColor(RGBColor color);
+    void on(RGBColor color);
     void off();
     void stopBlinking();
 	private:

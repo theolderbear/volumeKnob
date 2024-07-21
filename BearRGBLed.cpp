@@ -3,6 +3,8 @@
 #include "BearRGBLed.h"
 #include "RGBColor.h"
 
+RGBColor zero(0, 0, 0);
+
 BearRGBLed::BearRGBLed(int redPin, int greenPin, int bluPin) {
   _redPin = redPin;
   _greenPin = greenPin;
@@ -20,8 +22,6 @@ void BearRGBLed::blink(int blinkRate, RGBColor color) {
   _blinkRate = blinkRate;
   _blinking = true;
   _startBlinkMillis = millis();
-  Serial.println(_blinkRate);
-  delay(1000);
 }
 
 void BearRGBLed::keepBlinking() {
@@ -33,12 +33,7 @@ void BearRGBLed::keepBlinking() {
     _startBlinkMillis = millis();
   }
   if (_blinking) {
-
-    Serial.print("_blinking ");
-    Serial.println(_blinking);
-    analogWrite(_redPin, _blinkColor.red());
-    analogWrite(_greenPin, _blinkColor.green());
-    analogWrite(_bluPin, _blinkColor.blu());
+    on(_blinkColor);
   } else {
     off();
   }
@@ -52,16 +47,12 @@ void BearRGBLed::stopBlinking() {
   off();
 }
 
-void BearRGBLed::setColor(RGBColor color) {
-
+void BearRGBLed::on(RGBColor color) {
   analogWrite(_redPin, color.red());
   analogWrite(_greenPin, color.green());
   analogWrite(_bluPin, color.blu());
 }
 
 void BearRGBLed::off() {
-
-  analogWrite(_redPin, 0);
-  analogWrite(_greenPin, 0);
-  analogWrite(_bluPin, 0);
+  on(zero);
 }

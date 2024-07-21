@@ -28,6 +28,7 @@ RGBColor blu(0, 0, 255);
 void setup() {
   Serial.begin(9600);
   pinMode(buttonPin, INPUT_PULLUP);
+  
   btn.onPress(pressHandler)
     .onDoublePress(pressHandler)  // default timeout
     .onPressFor(pressHandler, 1000);
@@ -42,7 +43,7 @@ void loop() {
 
 void setLedColor() {
   if (paring) {
-    rgbLed.setColor(blu);
+    rgbLed.on(blu);
   } else {
     rgbLed.stopBlinking();
   }
@@ -72,14 +73,12 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
 
       break;
     case BfButton::LONG_PRESS:
-      Serial.print(" long pressed.");
-      Serial.println(paringCount);
+      Serial.println(" long pressed.");
 
       paring = true;
       rgbLed.blink(BLINK_DELAY, blu);
       if (paringCount == 3) {
         paring = true;
-        
       }
       break;
   }
