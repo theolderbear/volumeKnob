@@ -38,10 +38,6 @@ void loop() {
   checkRotation();
   encoderButton.read();
   rgbLed.keepBlinking();
-
-  if (!encoderButtonPressed()) {
-    pressedRotation = false;
-  }
 }
 
 void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
@@ -80,6 +76,10 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
 }
 
 void checkRotation() {
+
+  if (!encoderButtonPressed()) {
+    pressedRotation = false;
+  }
 
   if (!rotationLock) {
     rotationLock = true;
