@@ -20,7 +20,7 @@ String LEFT = "LEFT";
 
 boolean rotationRunning = false;
 
-BfButton btn(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
+BfButton encoderButton(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
 Encoder enc(2, 3);
 BearRGBLed rgbLed(5, 6, 7);
 RGBColor blu(0, 0, 255);
@@ -29,24 +29,15 @@ void setup() {
   Serial.begin(9600);
   pinMode(buttonPin, INPUT_PULLUP);
   
-  btn.onPress(pressHandler)
+  encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)  // default timeout
     .onPressFor(pressHandler, 1000);
 }
 
 void loop() {
-  rotation();
-  btn.read();
-
+  checkRotation();
+  encoderButton.read();
   rgbLed.keepBlinking();
-}
-
-void setLedColor() {
-  if (paring) {
-    rgbLed.on(blu);
-  } else {
-    rgbLed.stopBlinking();
-  }
 }
 
 void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
@@ -77,14 +68,11 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
 
       paring = true;
       rgbLed.blink(BLINK_DELAY, blu);
-      if (paringCount == 3) {
-        paring = true;
-      }
       break;
   }
 }
 
-void rotation() {
+void checkRotation() {
 
   if (!rotationRunning) {
     rotationRunning = true;
@@ -92,21 +80,20 @@ void rotation() {
     long pos = enc.read();
 
     if (pos == oldPos || pos % 2 == 0 || millis() - lastRotation < RIGHT_LEFT_DELAY) {
-      endRotation(pos);
+      rotationEnded(pos);
       return;
     }
 
-
     lastRotation = millis();
     String command = pos > oldPos ? RIGHT : LEFT;
-    endRotation(pos);
+    rotationEnded(pos);
 
-    Serial.print("Direction : ");
+    Serial.print("Rotation : ");
     Serial.println(command);
   }
 }
 
-void endRotation(long pos) {
+void rotationEnded(long pos) {
   rotationRunning = false;
   oldPos = pos;
 }
