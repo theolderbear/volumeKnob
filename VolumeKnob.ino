@@ -11,14 +11,14 @@ int buttonPin = 4;
 long oldPos = 0;
 long lastRotation = 0;
 long paringMillis = 0;
+bool pressedRotation = false;
 unsigned int paringCount;
 
 boolean paring = false;
-
 String RIGHT = "RIGHT";
 String LEFT = "LEFT";
 
-boolean rotationRunning = false;
+boolean rotationLock = false;
 
 BfButton encoderButton(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
 Encoder enc(2, 3);
@@ -28,7 +28,7 @@ RGBColor blu(0, 0, 255);
 void setup() {
   Serial.begin(9600);
   pinMode(buttonPin, INPUT_PULLUP);
-  
+
   encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)  // default timeout
     .onPressFor(pressHandler, 1000);
@@ -38,13 +38,20 @@ void loop() {
   checkRotation();
   encoderButton.read();
   rgbLed.keepBlinking();
+
+  if (!encoderButtonPressed()) {
+    pressedRotation = false;
+  }
 }
 
 void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
   Serial.print(btn->getID());
+  if (pressedRotation) {
+    return;
+  }
   switch (pattern) {
     case BfButton::SINGLE_PRESS:
-      Serial.println(" pressed.");
+      Serial.println(" single clicked.");
       if (!paring) {
         if (paringCount == 0) {
           paringMillis = millis();
@@ -60,7 +67,7 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
       }
       break;
     case BfButton::DOUBLE_PRESS:
-      Serial.println(" double pressed.");
+      Serial.println(" double clicked.");
 
       break;
     case BfButton::LONG_PRESS:
@@ -74,8 +81,8 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
 
 void checkRotation() {
 
-  if (!rotationRunning) {
-    rotationRunning = true;
+  if (!rotationLock) {
+    rotationLock = true;
 
     long pos = enc.read();
 
@@ -84,16 +91,22 @@ void checkRotation() {
       return;
     }
 
+    pressedRotation = encoderButtonPressed();
+
     lastRotation = millis();
     String command = pos > oldPos ? RIGHT : LEFT;
     rotationEnded(pos);
-
+    if (pressedRotation) Serial.print("Pressed ");
     Serial.print("Rotation : ");
     Serial.println(command);
   }
 }
 
+bool encoderButtonPressed() {
+  return !digitalRead(buttonPin);
+}
+
 void rotationEnded(long pos) {
-  rotationRunning = false;
+  rotationLock = false;
   oldPos = pos;
 }
