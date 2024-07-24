@@ -14,16 +14,31 @@ long paringMillis = 0;
 bool pressedRotation = false;
 unsigned int paringCount;
 
-boolean paring = false;
 String RIGHT = "RIGHT";
 String LEFT = "LEFT";
+
+enum Mode {
+    VOLUME_SCREEN = 0,
+    OTHER = 1,
+    PARING = 2
+};
+
+RGBColor colors[PARING + 1] = {
+    RGBColor(0, 255, 0),
+    RGBColor(255, 0, 0),
+    RGBColor(0, 0, 255)
+};
+
+Mode modes[PARING] = {VOLUME_SCREEN, OTHER};
+
+Mode currentMode = VOLUME_SCREEN;
 
 boolean rotationLock = false;
 
 BfButton encoderButton(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
 Encoder enc(2, 3);
 BearRGBLed rgbLed(5, 6, 7);
-RGBColor blu(0, 0, 255);
+
 
 void setup() {
   Serial.begin(9600);
@@ -48,29 +63,33 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
   switch (pattern) {
     case BfButton::SINGLE_PRESS:
       Serial.println(" single clicked.");
-      if (!paring) {
-        if (paringCount == 0) {
-          paringMillis = millis();
-        }
-        paringCount++;
-        if (millis() - paringMillis > PARING_DELAY || paringCount > 3) {
-          paringCount = 0;
-        }
-      } else {
-        paringCount = 0;
-        paring = false;
+      
+      if (currentMode == PARING) {
+        currentMode = VOLUME_SCREEN;
         rgbLed.stopBlinking();
       }
       break;
     case BfButton::DOUBLE_PRESS:
       Serial.println(" double clicked.");
+      {
 
+      
+      Mode next = modes[currentMode + 1];
+      if (next == PARING) {
+        currentMode = VOLUME_SCREEN;
+      } else {
+        currentMode = next;
+      }
+      }
+      rgbLed.on(colors[currentMode]);
+      Serial.print("Mode : ");
+      Serial.println(currentMode);
       break;
     case BfButton::LONG_PRESS:
       Serial.println(" long pressed.");
-
-      paring = true;
-      rgbLed.blink(BLINK_DELAY, blu);
+      
+      currentMode = PARING;
+      rgbLed.blink(BLINK_DELAY, colors[PARING]);
       break;
   }
 }
