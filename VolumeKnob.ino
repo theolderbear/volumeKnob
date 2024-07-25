@@ -3,8 +3,8 @@
 #include "BearRGBLed.h"
 
 const long RIGHT_LEFT_DELAY = 100;
-const long PARING_DELAY = 2500;
-const int BLINK_DELAY = 250;
+const long BLINK_DELAY = 250;
+const long LONG_PRSS_DELAY = 3000;
 
 int buttonPin = 4;
 
@@ -30,7 +30,6 @@ RGBColor colors[PARING + 1] = {
 };
 
 Mode modes[PARING] = {VOLUME_SCREEN, OTHER};
-
 Mode currentMode = VOLUME_SCREEN;
 
 boolean rotationLock = false;
@@ -43,10 +42,10 @@ BearRGBLed rgbLed(5, 6, 7);
 void setup() {
   Serial.begin(9600);
   pinMode(buttonPin, INPUT_PULLUP);
-
+  rgbLed.on(colors[currentMode]);
   encoderButton.onPress(pressHandler)
-    .onDoublePress(pressHandler)  // default timeout
-    .onPressFor(pressHandler, 1000);
+    .onDoublePress(pressHandler)
+    .onPressFor(pressHandler, LONG_PRSS_DELAY);
 }
 
 void loop() {
