@@ -1,4 +1,4 @@
-#include <Encoder.h>
+#include "AiEsp32RotaryEncoder.h"
 #include <BfButton.h>
 #include "BearRGBLed.h"
 #include "RGBColor.h"
@@ -36,13 +36,33 @@ Mode currentMode = PARING;
 boolean rotationLock = false;
 
 BfButton encoderButton(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
-// Encoder enc(2, 3);
+AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(2, 3, buttonPin, -1, 4);
 BearRGBLed rgbLed(5, 6, 7);
 
+void IRAM_ATTR readEncoderISR()
+{
+    rotaryEncoder.readEncoder_ISR();
+}
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(buttonPin, INPUT_PULLUP);
+
+  rotaryEncoder.begin();
+    rotaryEncoder.setup(readEncoderISR);
+    //set boundaries and if values should cycle or not
+    //in this example we will set possible values between 0 and 1000;
+    bool circleValues = false;
+    rotaryEncoder.setBoundaries(0, 1000, circleValues); //minValue, maxValue, circleValues true|false (when max go to min and vice versa)
+
+    /*Rotary acceleration introduced 25.2.2021.
+   * in case range to select is huge, for example - select a value between 0 and 1000 and we want 785
+   * without accelerateion you need long time to get to that number
+   * Using acceleration, faster you turn, faster will the value raise.
+   * For fine tuning slow down.
+   */
+    //rotaryEncoder.disableAcceleration(); //acceleration is now enabled by default - disable if you dont need it
+    rotaryEncoder.setAcceleration(250);
   
   encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)
@@ -54,7 +74,7 @@ void loop() {
     beginParing();
   } 
 
-  // checkRotation();
+  checkRotation();
   encoderButton.read();
   rgbLed.keepBlinking();
 }
@@ -78,7 +98,7 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
   }
   switch (pattern) {
     case BfButton::SINGLE_PRESS:
-      Serial.println(" single clicked.");
+      Serial.println(" Single clicked.");
       
       if (currentMode == PARING) {
         endParing();
@@ -89,11 +109,6 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
     case BfButton::DOUBLE_PRESS:
       Serial.println(" double clicked.");
       {
-
-        Serial.print("currentMode : ");
-        Serial.println(currentMode);
-        Serial.print("next : ");
-      
         Mode next = modes[currentMode + 1];
         if (next == PARING) {
           currentMode = VOLUME_SCREEN;
@@ -102,8 +117,6 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
         }
       }
       rgbLed.on(colors[currentMode]);
-      Serial.print("Mode : ");
-      Serial.println(currentMode);
       break;
     case BfButton::LONG_PRESS:
       Serial.println(" long pressed.");
@@ -112,38 +125,46 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
   }
 }
 
-// void checkRotation() {
+void checkRotation() {
 
-//   if (!encoderButtonPressed()) {
-//     pressedRotation = false;
-//   }
+  if (!encoderButtonPressed()) {
+    pressedRotation = false;
+  }
 
-//   if (!rotationLock) {
-//     rotationLock = true;
 
-//     long pos = enc.read();
+  if (rotaryEncoder.encoderChanged())
+    {
+            // Serial.print("Value: ");
+            // Serial.println(rotaryEncoder.readEncoder());
+ 
 
-//     if (pos == oldPos || pos % 2 == 0 || millis() - lastRotation < RIGHT_LEFT_DELAY) {
-//       rotationEnded(pos);
-//       return;
-//     }
+  if (!rotationLock) {
+    rotationLock = true;
 
-//     pressedRotation = encoderButtonPressed();
+    long pos = rotaryEncoder.readEncoder();
 
-//     lastRotation = millis();
-//     String command = pos > oldPos ? RIGHT : LEFT;
-//     rotationEnded(pos);
-//     if (pressedRotation) Serial.print("Pressed ");
-//     Serial.print("Rotation : ");
-//     Serial.println(command);
-//   }
-// }
+    if (pos == oldPos || millis() - lastRotation < RIGHT_LEFT_DELAY) {
+      rotationEnded(pos);
+      return;
+    }
+
+    pressedRotation = encoderButtonPressed();
+
+    lastRotation = millis();
+    String command = pos > oldPos ? RIGHT : LEFT;
+    rotationEnded(pos);
+    if (pressedRotation) Serial.print("Pressed ");
+    Serial.print("Rotation : ");
+    Serial.println(command);
+  }
+     }
+}
 
 bool encoderButtonPressed() {
   return !digitalRead(buttonPin);
 }
 
-// void rotationEnded(long pos) {
-//   rotationLock = false;
-//   oldPos = pos;
-// }
+void rotationEnded(long pos) {
+  rotationLock = false;
+  oldPos = pos;
+}
