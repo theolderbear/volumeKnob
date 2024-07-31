@@ -1,3 +1,4 @@
+#include "USBCDC.h"
 #include "HardwareSerial.h"
 #include "Arduino.h"
 #include "BearRGBLed.h"
@@ -22,6 +23,7 @@ void BearRGBLed::blink(int blinkRate, RGBColor color) {
   _blinkRate = blinkRate;
   _blinking = true;
   _startBlinkMillis = millis();
+   on(_blinkColor);
 }
 
 void BearRGBLed::keepBlinking() {
@@ -31,11 +33,11 @@ void BearRGBLed::keepBlinking() {
   if (millis() - _startBlinkMillis >= _blinkRate) {
     _blinking = !_blinking;
     _startBlinkMillis = millis();
-  }
-  if (_blinking) {
-    on(_blinkColor);
-  } else {
-    off();
+    if (_blinking) {
+      on(_blinkColor);
+    } else {
+      off();
+    }
   }
 }
 
