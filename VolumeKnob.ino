@@ -2,6 +2,9 @@
 #include <BfButton.h>
 #include "BearRGBLed.h"
 #include "RGBColor.h"
+#include <BleKeyboard.h>
+
+BleKeyboard bleKeyboard("BearKnob");
 
 const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
@@ -53,6 +56,7 @@ void setup() {
   encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)
     .onPressFor(pressHandler, LONG_PRSS_DELAY);
+  bleKeyboard.begin();
 }
 
 void loop() {
@@ -92,11 +96,13 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
   switch (pattern) {
     case BfButton::SINGLE_PRESS:
       Serial.println(" Single clicked.");
-      
+       
       if (currentMode == PARING) {
         endParing();
         currentMode = VOLUME_SCREEN;
         rgbLed.on(colors[currentMode]);
+      } else {
+        bleKeyboard.print("p");
       }
       break;
     case BfButton::DOUBLE_PRESS:
@@ -128,14 +134,17 @@ void checkRotation() {
   if (rotaryEncoder.encoderChanged()) {
 
     long pos = rotaryEncoder.readEncoder();
-    Serial.print("pos : ");
-    Serial.println(pos);
-
     pressedRotation = encoderButtonPressed();
 
-
     String command = pos > oldPos ? RIGHT : LEFT;
-    rotationEnded(pos);
+
+    if (pos > oldPos) {
+      bleKeyboard.print(pressedRotation ? "t" : "r");
+    } else {
+      bleKeyboard.print(pressedRotation ? ";" : "l");
+    }
+
+    oldPos = pos;
 
     if (pressedRotation) Serial.print("Pressed ");
 
@@ -146,9 +155,4 @@ void checkRotation() {
 
 bool encoderButtonPressed() {
   return !digitalRead(buttonPin);
-}
-
-void rotationEnded(long pos) {
-  rotationLock = false;
-  oldPos = pos;
 }
