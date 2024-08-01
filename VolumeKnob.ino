@@ -68,8 +68,8 @@ void loop() {
 void initRotaryEncoder() {
   rotaryEncoder.begin();
   rotaryEncoder.setup(readEncoderISR);
-  rotaryEncoder.setBoundaries(0, 1000, false); 
-  rotaryEncoder.setAcceleration(250);
+  rotaryEncoder.setBoundaries(-100000000, 100000000, true); 
+  rotaryEncoder.disableAcceleration();
 }
 
 void beginParing() {
@@ -125,32 +125,23 @@ void checkRotation() {
   }
 
 
-  if (rotaryEncoder.encoderChanged())
-    {
-            // Serial.print("Value: ");
-            // Serial.println(rotaryEncoder.readEncoder());
- 
-
-  if (!rotationLock) {
-    rotationLock = true;
+  if (rotaryEncoder.encoderChanged()) {
 
     long pos = rotaryEncoder.readEncoder();
-
-    if (pos == oldPos || millis() - lastRotation < RIGHT_LEFT_DELAY) {
-      rotationEnded(pos);
-      return;
-    }
+    Serial.print("pos : ");
+    Serial.println(pos);
 
     pressedRotation = encoderButtonPressed();
 
-    lastRotation = millis();
+
     String command = pos > oldPos ? RIGHT : LEFT;
     rotationEnded(pos);
+
     if (pressedRotation) Serial.print("Pressed ");
+
     Serial.print("Rotation : ");
     Serial.println(command);
   }
-     }
 }
 
 bool encoderButtonPressed() {
