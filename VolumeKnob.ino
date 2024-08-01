@@ -48,22 +48,8 @@ void setup() {
   Serial.begin(115200);
   pinMode(buttonPin, INPUT_PULLUP);
 
-  rotaryEncoder.begin();
-    rotaryEncoder.setup(readEncoderISR);
-    //set boundaries and if values should cycle or not
-    //in this example we will set possible values between 0 and 1000;
-    bool circleValues = false;
-    rotaryEncoder.setBoundaries(0, 1000, circleValues); //minValue, maxValue, circleValues true|false (when max go to min and vice versa)
+  initRotaryEncoder();
 
-    /*Rotary acceleration introduced 25.2.2021.
-   * in case range to select is huge, for example - select a value between 0 and 1000 and we want 785
-   * without accelerateion you need long time to get to that number
-   * Using acceleration, faster you turn, faster will the value raise.
-   * For fine tuning slow down.
-   */
-    //rotaryEncoder.disableAcceleration(); //acceleration is now enabled by default - disable if you dont need it
-    rotaryEncoder.setAcceleration(250);
-  
   encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)
     .onPressFor(pressHandler, LONG_PRSS_DELAY);
@@ -77,6 +63,13 @@ void loop() {
   checkRotation();
   encoderButton.read();
   rgbLed.keepBlinking();
+}
+
+void initRotaryEncoder() {
+  rotaryEncoder.begin();
+  rotaryEncoder.setup(readEncoderISR);
+  rotaryEncoder.setBoundaries(0, 1000, false); 
+  rotaryEncoder.setAcceleration(250);
 }
 
 void beginParing() {
