@@ -4,22 +4,19 @@
 #include "RGBColor.h"
 #include <BleKeyboard.h>
 
-BleKeyboard bleKeyboard("BearKnob");
-
 const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
 const long LONG_PRSS_DELAY = 3000;
 
-int buttonPin = 4;
+const int buttonPin = 4;
+const int redPin = 5;
+const int greenPin = 6;
+const int bluPin = 7;
 
-long oldPos = 0;
-long lastRotation = 0;
-long paringMillis = 0;
+long previousPos = 0;
 bool pressedRotation = false;
+bool ignoreSingleClick= false;
 bool paringRunnig = false;
-
-String RIGHT = "RIGHT";
-String LEFT = "LEFT";
 
 enum Mode {
     VOLUME_SCREEN = 0,
@@ -38,9 +35,10 @@ Mode currentMode = PARING;
 
 boolean rotationLock = false;
 
-BfButton encoderButton(BfButton::STANDALONE_DIGITAL, 4, true, LOW);
+BfButton encoderButton(BfButton::STANDALONE_DIGITAL, buttonPin, true, LOW);
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(2, 3, buttonPin, -1, 4);
-BearRGBLed rgbLed(5, 6, 7);
+BearRGBLed rgbLed(redPin, greenPin, bluPin);
+BleKeyboard bleKeyboard("BearKnob");
 
 void IRAM_ATTR readEncoderISR()
 {
@@ -93,6 +91,10 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
   if (pressedRotation) {
     return;
   }
+  if (ignoreSingleClick) {
+    ignoreSingleClick = false;
+    return;
+  }
   switch (pattern) {
     case BfButton::SINGLE_PRESS:
       Serial.println(" Single clicked.");
@@ -126,30 +128,31 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
 
 void checkRotation() {
 
-  if (!encoderButtonPressed()) {
+  if (pressedRotation && !encoderButtonPressed()) {
     pressedRotation = false;
+    ignoreSingleClick = true;
   }
-
 
   if (rotaryEncoder.encoderChanged()) {
 
     long pos = rotaryEncoder.readEncoder();
     pressedRotation = encoderButtonPressed();
 
-    String command = pos > oldPos ? RIGHT : LEFT;
+    String key = "null";
 
-    if (pos > oldPos) {
-      bleKeyboard.print(pressedRotation ? "t" : "r");
+    if (pos > previousPos) {
+      key = pressedRotation ? "t" : "r";
     } else {
-      bleKeyboard.print(pressedRotation ? ";" : "l");
+      key = pressedRotation ? ";" : "l";
     }
-
-    oldPos = pos;
+    bleKeyboard.print(key);
+    
+    previousPos = pos;
 
     if (pressedRotation) Serial.print("Pressed ");
 
     Serial.print("Rotation : ");
-    Serial.println(command);
+    Serial.println(key);
   }
 }
 
