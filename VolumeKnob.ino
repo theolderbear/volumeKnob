@@ -6,7 +6,7 @@
 
 const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
-const long LONG_PRSS_DELAY = 3000;
+const long LONG_PRSS_DELAY = 1000;
 const long PARING_TIME = 10000;
 
 const int buttonPin = 4;
@@ -43,6 +43,7 @@ BearRGBLed rgbLed(redPin, greenPin, bluPin);
 BleKeyboard bleKeyboard("BearKnob");
 
 void setup() {
+  delay(2000);
   Serial.begin(115200);
   pinMode(buttonPin, INPUT_PULLUP);
 
@@ -51,8 +52,10 @@ void setup() {
   encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)
     .onPressFor(pressHandler, LONG_PRSS_DELAY);
-  bleKeyboard.begin();
+
   beginParing();
+  bleKeyboard.begin();
+
 }
 
 void loop() {
@@ -61,7 +64,7 @@ void loop() {
     beginParing();
   }
 
-  if (currentMode == PARING && (bleKeyboard.isConnected() || (millis() - PARING_TIME > paringStartMills))) {
+  if (currentMode == PARING && (bleKeyboard.isConnected() || (millis() - paringStartMills  > PARING_TIME))) {
     endParing();
   }
 
@@ -82,7 +85,7 @@ void initRotaryEncoder() {
 }
 
 void beginParing() {
-  Serial.println("beginParing");
+  Serial.println("Connecting...");
   
   paringStartMills = millis();
   currentMode = PARING;
@@ -90,8 +93,14 @@ void beginParing() {
 }
 
 void endParing() {
+  Serial.print("Connected : ");
+  // Serial.println(bleKeyboard.isConnected());
+  // Serial.print("paringStartMills : ");
+  // Serial.println(paringStartMills);
+  // Serial.print("currentMode : ");
+  // Serial.println(currentMode);
   if (bleKeyboard.isConnected()) {
-    Serial.println("connected");
+    Serial.println("Connected");
     currentMode = VOLUME_SCREEN;
   } else {
     Serial.println("Off");
@@ -133,7 +142,7 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
       rgbLed.on(colors[currentMode]);
       break;
     case BfButton::LONG_PRESS:
-      
+      bleKeyboard.print("m");
       break;
   }
 }
