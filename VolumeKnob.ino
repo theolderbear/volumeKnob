@@ -8,12 +8,14 @@ const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
 const long LONG_PRSS_DELAY = 1000;
 const long PARING_TIME = 10000;
+const long BATTERY_LEVEL_TIME = 5000;
 
 const int buttonPin = 4;
 const int redPin = 5;
 const int greenPin = 6;
 const int bluPin = 7;
 
+long batteryLevelMillis = 0;
 long paringStartMills = 0;
 long previousPos = 0;
 bool pressedRotation = false;
@@ -55,10 +57,12 @@ void setup() {
 
   beginParing();
   bleKeyboard.begin();
-
+  
 }
 
 void loop() {
+
+  setBatteryLevel();
 
   if (currentMode != OFF && currentMode != PARING && !bleKeyboard.isConnected()) {
     beginParing();
@@ -71,6 +75,18 @@ void loop() {
   checkRotation();
   encoderButton.read();
   rgbLed.keepBlinking();
+}
+
+int ct = 0;
+
+void setBatteryLevel() {
+  if (bleKeyboard.isConnected() && (batteryLevelMillis == 0 || (millis() - batteryLevelMillis > BATTERY_LEVEL_TIME))) {
+    Serial.println("setBatteryLevel");
+    bleKeyboard.setBatteryLevel(80 - ct*10);
+    batteryLevelMillis = millis();
+    ct = ct + 1;
+  }
+  
 }
 
 void IRAM_ATTR readEncoderISR() {
