@@ -8,7 +8,10 @@ const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
 const long LONG_PRSS_DELAY = 1000;
 const long PARING_TIME = 10000;
-const long BATTERY_LEVEL_TIME = 5000;
+const long BATTERY_LEVEL_TIME = 10000; // How often to check battery level
+const long CRITICAL_BATTERY_LEVEL = 10;
+const long LOW_BATTERY_LEVEL = 30;
+const long BATTERY_DELAY = 2000; // How long the low battery alert should be held 
 
 const int buttonPin = 4;
 const int redPin = 5;
@@ -19,24 +22,27 @@ long batteryLevelMillis = 0;
 long paringStartMills = 0;
 long previousPos = 0;
 bool pressedRotation = false;
-bool ignoreSingleClick= false;
+bool ignoreSingleClick = false;
 bool paringRunnig = false;
 
 enum Mode {
-    VOLUME_SCREEN = 0,
-    OTHER = 1,
-    PARING = 2,
-    OFF = 3
+  VOLUME_SCREEN = 0,
+  OTHER = 1,
+  PARING = 2,
+  OFF = 3
 };
 
-RGBColor colors[OFF + 1] = {
-    RGBColor(0, 0, 255), // Volume
-    RGBColor(0, 255, 0), // Red
-    RGBColor(0, 0, 255), // Paring
-    RGBColor(0, 0, 0)   // Off
+RGBColor modeColors[OFF + 1] = {
+  RGBColor(0, 0, 255),  // Volume
+  RGBColor(0, 255, 0),  // Green
+  RGBColor(0, 0, 255),  // Paring
+  RGBColor(0, 0, 0)     // Off
 };
 
-Mode modes[OFF + 1] = {VOLUME_SCREEN, OTHER, PARING, OFF};
+RGBColor RED(255, 0, 0);
+RGBColor ORANGE(255, 128, 0);
+
+Mode modes[OFF + 1] = { VOLUME_SCREEN, OTHER, PARING, OFF };
 Mode currentMode = PARING;
 
 BfButton encoderButton(BfButton::STANDALONE_DIGITAL, buttonPin, true, LOW);
@@ -57,7 +63,6 @@ void setup() {
 
   beginParing();
   bleKeyboard.begin();
-  
 }
 
 void loop() {
@@ -68,13 +73,13 @@ void loop() {
     beginParing();
   }
 
-  if (currentMode == PARING && (bleKeyboard.isConnected() || (millis() - paringStartMills  > PARING_TIME))) {
+  if (currentMode == PARING && (bleKeyboard.isConnected() || (millis() - paringStartMills > PARING_TIME))) {
     endParing();
   }
 
   checkRotation();
   encoderButton.read();
-  rgbLed.keepBlinking();
+  rgbLed.light();
 }
 
 int ct = 0;
@@ -82,30 +87,35 @@ int ct = 0;
 void setBatteryLevel() {
   if (bleKeyboard.isConnected() && (batteryLevelMillis == 0 || (millis() - batteryLevelMillis > BATTERY_LEVEL_TIME))) {
     Serial.println("setBatteryLevel");
-    bleKeyboard.setBatteryLevel(80 - ct*10);
+    int batteryLevel = 40 - ct * 10;
+    if (batteryLevel < CRITICAL_BATTERY_LEVEL) {
+      rgbLed.on(BATTERY_DELAY, RED);
+    } else if (batteryLevel < LOW_BATTERY_LEVEL) {
+      rgbLed.on(BATTERY_DELAY, ORANGE);
+    }
+    bleKeyboard.setBatteryLevel(batteryLevel);
     batteryLevelMillis = millis();
     ct = ct + 1;
   }
-  
 }
 
 void IRAM_ATTR readEncoderISR() {
-    rotaryEncoder.readEncoder_ISR();
+  rotaryEncoder.readEncoder_ISR();
 }
 
 void initRotaryEncoder() {
   rotaryEncoder.begin();
   rotaryEncoder.setup(readEncoderISR);
-  rotaryEncoder.setBoundaries(-100000000, 100000000, true); 
+  rotaryEncoder.setBoundaries(-100000000, 100000000, true);
   rotaryEncoder.disableAcceleration();
 }
 
 void beginParing() {
   Serial.println("Connecting...");
-  
+
   paringStartMills = millis();
   currentMode = PARING;
-  rgbLed.blink(BLINK_DELAY, colors[currentMode]);
+  rgbLed.blink(BLINK_DELAY, modeColors[currentMode]);
 }
 
 void endParing() {
@@ -125,8 +135,8 @@ void endParing() {
 
   paringStartMills = 0;
   rgbLed.stopBlinking();
-  
-  rgbLed.on(colors[currentMode]);
+
+  rgbLed.on(modeColors[currentMode]);
 }
 
 void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
@@ -134,7 +144,7 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
     beginParing();
     return;
   }
-  if (pressedRotation ) {
+  if (pressedRotation) {
     return;
   }
   if (ignoreSingleClick) {
@@ -155,7 +165,7 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
           currentMode = next;
         }
       }
-      rgbLed.on(colors[currentMode]);
+      rgbLed.on(modeColors[currentMode]);
       break;
     case BfButton::LONG_PRESS:
       bleKeyboard.print("m");
@@ -177,7 +187,7 @@ void checkRotation() {
 
     String key = "null";
 
-     if (pos != previousPos && currentMode == OFF) {
+    if (pos != previousPos && currentMode == OFF) {
       beginParing();
     }
 
@@ -187,7 +197,7 @@ void checkRotation() {
       key = pressedRotation ? ";" : "l";
     }
     bleKeyboard.print(key);
-    
+
     previousPos = pos;
   }
 }
