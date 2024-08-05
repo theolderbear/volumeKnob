@@ -25,6 +25,12 @@ bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
 
+//
+/// Testare blinking onTime
+//
+
+
+
 enum Mode {
   VOLUME_SCREEN = 0,
   OTHER = 1,
@@ -134,7 +140,6 @@ void endParing() {
   }
 
   paringStartMills = 0;
-  rgbLed.stopBlinking();
 
   rgbLed.on(modeColors[currentMode]);
 }
@@ -157,6 +162,9 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
       break;
     case BfButton::DOUBLE_PRESS:
       Serial.println(" double clicked.");
+      bleKeyboard.print("m");
+      break;
+    case BfButton::LONG_PRESS:
       {
         Mode next = modes[currentMode + 1];
         if (next == PARING) {
@@ -166,9 +174,6 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
         }
       }
       rgbLed.on(modeColors[currentMode]);
-      break;
-    case BfButton::LONG_PRESS:
-      bleKeyboard.print("m");
       break;
   }
 }

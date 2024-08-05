@@ -12,59 +12,68 @@ BearRGBLed::BearRGBLed(int redPin, int greenPin, int bluPin) {
   _blinkRate = 0;
   _blinking = false;
   _blinkColor = _zero;
+  _onTime = 0;
   pinMode(_redPin, OUTPUT);
   pinMode(_greenPin, OUTPUT);
   pinMode(_bluPin, OUTPUT);
 }
 
-void BearRGBLed::blink(long blinkRate, long time, RGBColor color) {
-  _blinkColor = color;
-  _blinkRate = blinkRate;
-  _blinking = true;
-  _startBlinkMillis = millis();
-  on(_blinkColor);
-}
-
 void BearRGBLed::blink(long blinkRate, RGBColor color) {
-  _blinkColor = color;
-  _blinkRate = blinkRate;
-  _blinking = true;
-  _startBlinkMillis = millis();
-  on(_blinkColor);
-}
-
-void BearRGBLed::on(RGBColor color) {
-  _onTimeStart = 0;
-  _onTime = 0;
   _mainColor = color;
-  on(0, color);
+  blink(blinkRate, 0, color);
 }
 
-void BearRGBLed::on(long time, RGBColor color) {
+void BearRGBLed::blink(long blinkRate, long time, RGBColor color) {
+  reset();
   if (time > 0) {
     _onTime = time;
     _onTimeStart = millis();
   }
 
+  _blinkColor = color;
+  _blinkRate = blinkRate;
+  _blinking = true;
+  _startBlinkMillis = millis();
+  set(color);
+}
+
+void BearRGBLed::on(RGBColor color) {
+  _mainColor = color;
+  on(0, color);
+}
+
+void BearRGBLed::on(long time, RGBColor color) {
+  reset();
+  if (time > 0) {
+    _onTime = time;
+    _onTimeStart = millis();
+  }
+  set(color);
+}
+
+void BearRGBLed::set(RGBColor color) {
   analogWrite(_redPin, color.red());
   analogWrite(_greenPin, color.green());
   analogWrite(_bluPin, color.blu());
 }
 
-void BearRGBLed::light() {
-  keepBlinking();
-  keepOn();
+void BearRGBLed::off() {
+  set(_zero);
 }
 
+void BearRGBLed::light() {
+  keepOn();
+  keepBlinking();
+}
 
 void BearRGBLed::keepOn() {
   Serial.print("keepOn : ");
   Serial.println(_onTime);
   if (_onTime > 0 && (millis() - _onTimeStart > _onTime)) {
-    on(_mainColor);
+    reset();
+    set(_mainColor);
   }
 }
-
 
 void BearRGBLed::keepBlinking() {
   if (_blinkRate == 0) {
@@ -74,21 +83,18 @@ void BearRGBLed::keepBlinking() {
     _blinking = !_blinking;
     _startBlinkMillis = millis();
     if (_blinking) {
-      on(_blinkColor);
+      set(_blinkColor);
     } else {
       off();
     }
   }
 }
 
-void BearRGBLed::stopBlinking() {
+void BearRGBLed::reset() {
+  _onTimeStart = 0;
+  _onTime = 0;
   _blinkRate = 0;
   _blinking = false;
   _startBlinkMillis = 0;
   _blinkColor = RGBColor(0, 0, 0);
-  off();
-}
-
-void BearRGBLed::off() {
-  on(_zero);
 }

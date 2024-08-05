@@ -28,5 +28,7 @@ private:
   RGBColor _mainColor = RGBColor(0, 0, 0);
   RGBColor _blinkColor = RGBColor(0, 0, 0);
   void keepOn();
+  void reset();
+  void set(RGBColor color);
 };
 #endif
