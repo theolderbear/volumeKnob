@@ -33,7 +33,7 @@ long previousPos = 0;
 bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
-int batteryLevelTest = -1; // Set to 0 to mock the battery
+int batteryLevelTest = -1; // Set to 50 to mock the battery
 
 enum Mode {
   VOLUME_SCREEN = 0,
@@ -112,10 +112,9 @@ void setBatteryLevel() {
 int getBatteryPercentage() {
   
   if (batteryLevelTest != -1) {
-    batteryLevelTest = batteryLevelTest + 1;
-    int batteryLevel = 40 - batteryLevelTest * 10;
-    if (batteryLevel < 0) {
-      batteryLevelTest = 0;
+    batteryLevelTest = batteryLevelTest - 10;
+    if (batteryLevelTest < 0) {
+      batteryLevelTest = 50;
     }
     return batteryLevelTest;
   }
