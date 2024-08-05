@@ -67,8 +67,6 @@ void BearRGBLed::light() {
 }
 
 void BearRGBLed::keepOn() {
-  Serial.print("keepOn : ");
-  Serial.println(_onTime);
   if (_onTime > 0 && (millis() - _onTimeStart > _onTime)) {
     reset();
     set(_mainColor);

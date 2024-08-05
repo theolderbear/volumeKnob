@@ -8,15 +8,23 @@ const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
 const long LONG_PRSS_DELAY = 1000;
 const long PARING_TIME = 10000;
-const long BATTERY_LEVEL_TIME = 10000; // How often to check battery level
+const long BATTERY_LEVEL_TIME = 3000;  // How often to check battery level
 const long CRITICAL_BATTERY_LEVEL = 10;
 const long LOW_BATTERY_LEVEL = 30;
-const long BATTERY_DELAY = 2000; // How long the low battery alert should be held 
+const long BATTERY_DELAY = 2000;  // How long the low battery alert should be held
 
 const int buttonPin = 4;
 const int redPin = 5;
 const int greenPin = 6;
 const int bluPin = 7;
+const int batteryPin = A0;
+
+const float MAX_BATTERY_V = 5.5;
+const float MAX_BATTERY_V_DELTA = 4;
+const float MAX_PIN_VOLTAGE = 3.3; // Max voltage that can be read from a pin
+const unsigned int MAX_ANALOG_READ = 4095;
+const unsigned int R1_V_DIVIDER = 5000;
+const unsigned int R2_V_DIVIDER = 5000;
 
 long batteryLevelMillis = 0;
 long paringStartMills = 0;
@@ -24,12 +32,6 @@ long previousPos = 0;
 bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
-
-//
-/// Testare blinking onTime
-//
-
-
 
 enum Mode {
   VOLUME_SCREEN = 0,
@@ -92,8 +94,9 @@ int ct = 0;
 
 void setBatteryLevel() {
   if (bleKeyboard.isConnected() && (batteryLevelMillis == 0 || (millis() - batteryLevelMillis > BATTERY_LEVEL_TIME))) {
-    Serial.println("setBatteryLevel");
-    int batteryLevel = 40 - ct * 10;
+
+    int batteryLevel = getBatteryPercentage();
+
     if (batteryLevel < CRITICAL_BATTERY_LEVEL) {
       rgbLed.on(BATTERY_DELAY, RED);
     } else if (batteryLevel < LOW_BATTERY_LEVEL) {
@@ -101,8 +104,27 @@ void setBatteryLevel() {
     }
     bleKeyboard.setBatteryLevel(batteryLevel);
     batteryLevelMillis = millis();
-    ct = ct + 1;
   }
+}
+
+int getBatteryPercentage() {
+  // int batteryLevel = 40 - ct * 10;
+  int dividePin = analogRead(batteryPin);
+  float divideV = dividePin * MAX_PIN_VOLTAGE / MAX_ANALOG_READ;
+  float v = divideV * (R1_V_DIVIDER + R2_V_DIVIDER) / R2_V_DIVIDER;
+  int batteryLevel = 100 / (MAX_BATTERY_V - MAX_BATTERY_V_DELTA) * (v - MAX_BATTERY_V_DELTA);
+  // ct = ct + 1;
+
+  Serial.print("battery pin : ");
+  Serial.print(dividePin);
+  Serial.print(", dv : ");
+  Serial.print(divideV);
+  Serial.print(", v : ");
+  Serial.print(v);
+  Serial.print(", % : ");
+  Serial.println(batteryLevel);
+
+  return batteryLevel;
 }
 
 void IRAM_ATTR readEncoderISR() {
@@ -125,12 +147,6 @@ void beginParing() {
 }
 
 void endParing() {
-  Serial.print("Connected : ");
-  // Serial.println(bleKeyboard.isConnected());
-  // Serial.print("paringStartMills : ");
-  // Serial.println(paringStartMills);
-  // Serial.print("currentMode : ");
-  // Serial.println(currentMode);
   if (bleKeyboard.isConnected()) {
     Serial.println("Connected");
     currentMode = VOLUME_SCREEN;
