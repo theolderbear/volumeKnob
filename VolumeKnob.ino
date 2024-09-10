@@ -8,7 +8,7 @@ const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
 const long LONG_PRSS_DELAY = 1000;
 const long PARING_TIME = 10000;
-const long BATTERY_LEVEL_TIME = 15 * 60 * 1000;  // How often to check battery level
+const long BATTERY_LEVEL_TIME = 5 * 60 * 1000;  // How often to check battery level
 const long CRITICAL_BATTERY_LEVEL = 10;
 const long LOW_BATTERY_LEVEL = 30;
 const long BATTERY_DELAY = 2000;  // How long the low battery alert should be held
@@ -123,7 +123,11 @@ int getBatteryPercentage() {
   float divideV = dividePin * MAX_PIN_VOLTAGE / MAX_ANALOG_READ;
   float v = divideV * (R1_V_DIVIDER + R2_V_DIVIDER) / R2_V_DIVIDER;
   int batteryLevel = 100 / (MAX_BATTERY_V - MAX_BATTERY_V_DELTA) * (v - MAX_BATTERY_V_DELTA);
+  // int batteryLevel = v * 10;
 
+  if (batteryLevel < 0) {
+    batteryLevel = 0;
+  }
 
   printBatteryLevel(dividePin, divideV, v, batteryLevel);
   return batteryLevel;
@@ -214,7 +218,7 @@ void checkRotation() {
       beginParing();
     }
 
-    if (pos > previousPos) {
+    if (pos < previousPos) {
       key = pressedRotation ? "t" : "r";
     } else {
       key = pressedRotation ? ";" : "l";
