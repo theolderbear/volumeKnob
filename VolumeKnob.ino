@@ -1,4 +1,3 @@
-#include "AiEsp32RotaryEncoder.h"
 #include <BfButton.h>
 #include "BearRGBLed.h"
 #include "RGBColor.h"
@@ -13,6 +12,8 @@ const long CRITICAL_BATTERY_LEVEL = 10;
 const long LOW_BATTERY_LEVEL = 30;
 const long BATTERY_DELAY = 2000;  // How long the low battery alert should be held
 
+const int rotaryPinA = 2;
+const int rotaryPinB = 3;
 const int buttonPin = 4;
 const int redPin = 5;
 const int greenPin = 6;
@@ -33,7 +34,7 @@ long previousPos = 0;
 bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
-int batteryLevelTest = -1; // Set to 50 to mock the battery
+int batteryLevelTest = -1;  // Set to 50 to mock the battery
 
 enum Mode {
   VOLUME_SCREEN = 0,
@@ -56,7 +57,6 @@ Mode modes[OFF + 1] = { VOLUME_SCREEN, OTHER, PARING, OFF };
 Mode currentMode = PARING;
 
 BfButton encoderButton(BfButton::STANDALONE_DIGITAL, buttonPin, true, LOW);
-AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(2, 3, buttonPin, -1, 4);
 BearRGBLed rgbLed(redPin, greenPin, bluPin);
 BleKeyboard bleKeyboard("BearKnob");
 
@@ -64,8 +64,6 @@ void setup() {
   delay(2000);
   Serial.begin(115200);
   pinMode(buttonPin, INPUT_PULLUP);
-
-  initRotaryEncoder();
 
   encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)
@@ -75,8 +73,17 @@ void setup() {
   bleKeyboard.begin();
 }
 
+String rotTest = "";
 void loop() {
-
+  // String currentRotTest = "" + String(digitalRead(2)) + " : " + String(digitalRead(3));
+  // if (!rotTest.equals(currentRotTest)) {
+  //   Serial.print(currentRotTest);
+  //   Serial.print(" ");
+  //   Serial.print(rotaryEncoder.encoderChanged());
+  //   Serial.print(" ");
+  //   Serial.println(rotaryEncoder.readEncoder());
+  //   rotTest = currentRotTest;
+  // }
   setBatteryLevel();
 
   if (currentMode != OFF && currentMode != PARING && !bleKeyboard.isConnected()) {
@@ -91,8 +98,6 @@ void loop() {
   encoderButton.read();
   rgbLed.light();
 }
-
-int ct = 0;
 
 void setBatteryLevel() {
   if (bleKeyboard.isConnected() && (batteryLevelMillis == 0 || (millis() - batteryLevelMillis > BATTERY_LEVEL_TIME))) {
@@ -110,7 +115,7 @@ void setBatteryLevel() {
 }
 
 int getBatteryPercentage() {
-  
+
   if (batteryLevelTest != -1) {
     batteryLevelTest = batteryLevelTest - 10;
     if (batteryLevelTest < 0) {
@@ -131,17 +136,6 @@ int getBatteryPercentage() {
 
   printBatteryLevel(dividePin, divideV, v, batteryLevel);
   return batteryLevel;
-}
-
-void IRAM_ATTR readEncoderISR() {
-  rotaryEncoder.readEncoder_ISR();
-}
-
-void initRotaryEncoder() {
-  rotaryEncoder.begin();
-  rotaryEncoder.setup(readEncoderISR);
-  rotaryEncoder.setBoundaries(-100000000, 100000000, true);
-  rotaryEncoder.disableAcceleration();
 }
 
 void beginParing() {
@@ -183,7 +177,6 @@ void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
       bleKeyboard.print("p");
       break;
     case BfButton::DOUBLE_PRESS:
-      Serial.println(" double clicked.");
       bleKeyboard.print("m");
       break;
     case BfButton::LONG_PRESS:
@@ -207,26 +200,23 @@ void checkRotation() {
     ignoreSingleClick = true;
   }
 
-  if (rotaryEncoder.encoderChanged()) {
+  long pos = digitalRead(rotaryPinA);
 
-    long pos = rotaryEncoder.readEncoder();
-    pressedRotation = encoderButtonPressed();
+  if (pos != previousPos && currentMode == OFF) {
+    beginParing();
+  }
 
+  if (pos != previousPos) {
     String key = "null";
-
-    if (pos != previousPos && currentMode == OFF) {
-      beginParing();
-    }
-
-    if (pos < previousPos) {
+    pressedRotation = encoderButtonPressed();
+    if (digitalRead(rotaryPinB) != pos) {
       key = pressedRotation ? "t" : "r";
     } else {
       key = pressedRotation ? ";" : "l";
     }
     bleKeyboard.print(key);
-
-    previousPos = pos;
   }
+  previousPos = pos;
 }
 
 bool encoderButtonPressed() {
