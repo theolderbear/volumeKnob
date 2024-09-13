@@ -12,8 +12,8 @@ const long CRITICAL_BATTERY_LEVEL = 10;
 const long LOW_BATTERY_LEVEL = 30;
 const long BATTERY_DELAY = 2000;  // How long the low battery alert should be held
 
-const int rotaryPinA = 2;
-const int rotaryPinB = 3;
+const int rotaryPinA = 3;
+const int rotaryPinB = 2;
 const int buttonPin = 4;
 const int redPin = 5;
 const int greenPin = 6;
@@ -64,6 +64,8 @@ void setup() {
   delay(2000);
   Serial.begin(115200);
   pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(rotaryPinA, INPUT);
+  pinMode(rotaryPinB, INPUT);
 
   encoderButton.onPress(pressHandler)
     .onDoublePress(pressHandler)
@@ -75,15 +77,13 @@ void setup() {
 
 String rotTest = "";
 void loop() {
-  // String currentRotTest = "" + String(digitalRead(2)) + " : " + String(digitalRead(3));
-  // if (!rotTest.equals(currentRotTest)) {
-  //   Serial.print(currentRotTest);
-  //   Serial.print(" ");
-  //   Serial.print(rotaryEncoder.encoderChanged());
-  //   Serial.print(" ");
-  //   Serial.println(rotaryEncoder.readEncoder());
-  //   rotTest = currentRotTest;
-  // }
+  String currentRotTest = "" + String(digitalRead(rotaryPinA)) + " : " + String(digitalRead(rotaryPinB));
+  // Serial.println(currentRotTest);
+  if (!rotTest.equals(currentRotTest)) {
+    Serial.print(currentRotTest);
+    Serial.print(" ");
+    rotTest = currentRotTest;
+  }
   setBatteryLevel();
 
   if (currentMode != OFF && currentMode != PARING && !bleKeyboard.isConnected()) {
@@ -139,7 +139,7 @@ int getBatteryPercentage() {
 }
 
 void beginParing() {
-  Serial.println("Connecting...");
+  Serial.println("Connecting.......");
 
   paringStartMills = millis();
   currentMode = PARING;
