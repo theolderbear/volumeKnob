@@ -56,7 +56,7 @@ RGBColor RED(255, 0, 0);
 RGBColor ORANGE(255, 128, 0);
 
 Mode modes[OFF + 1] = { VOLUME_SCREEN, OTHER, PARING, OFF };
-Mode currentMode = PARING;
+Mode currentMode = OFF;
 
 BfButton encoderButton(BfButton::STANDALONE_DIGITAL, buttonPin, true, LOW);
 BearRGBLed rgbLed(redPin, greenPin, bluPin);
@@ -81,20 +81,10 @@ void setup() {
 void loop() {
   printRotationStatus();
   setBatteryLevel();
-  paring();
+  bleConnection();
   checkRotation();
   encoderButton.read();
   rgbLed.light();
-}
-
-void paring() {
-  if (currentMode != OFF && currentMode != PARING && !bleKeyboard.isConnected()) {
-    beginParing();
-  }
-
-  if (currentMode == PARING && (bleKeyboard.isConnected() || (millis() - paringStartMills > PARING_TIME))) {
-    endParing();
-  }
 }
 
 void setBatteryLevel() {
@@ -131,6 +121,16 @@ int getBatteryPercentage() {
 
   printBatteryLevel(dividePin, divideV, v, batteryLevel);
   return batteryLevel;
+}
+
+void bleConnection() {
+  if (currentMode != OFF && currentMode != PARING && !bleKeyboard.isConnected()) {
+    beginParing();
+  }
+
+  if (currentMode == PARING && (bleKeyboard.isConnected() || (millis() - paringStartMills > PARING_TIME))) {
+    endParing();
+  }
 }
 
 void beginParing() {
