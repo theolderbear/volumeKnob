@@ -36,6 +36,7 @@ long previousPos = 0;
 bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
+bool batteryLevelShowVolts = false;
 
 enum Mode {
   VOLUME_SCREEN = 0,
@@ -118,7 +119,11 @@ int getBatteryPercentage() {
   float divideV = dividePin * MAX_PIN_VOLTAGE / MAX_ANALOG_READ;
   float v = divideV * (R1_V_DIVIDER + R2_V_DIVIDER) / R2_V_DIVIDER;
   int batteryLevel = 100 / (MAX_BATTERY_V - MAX_BATTERY_V_DELTA) * (v - MAX_BATTERY_V_DELTA);
-  // int batteryLevel = v * 10;
+  
+  if (batteryLevelShowVolts) {
+    batteryLevel = v * 10;  
+  }
+  
 
   if (batteryLevel < 0) {
     batteryLevel = 0;
