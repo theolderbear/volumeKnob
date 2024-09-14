@@ -209,7 +209,7 @@ void checkRotation() {
   if (pos != previousPos) {
     String key = "null";
     pressedRotation = encoderButtonPressed();
-    if (digitalRead(rotaryPinB) != pos) {
+    if (digitalRead(rotaryPinB) == pos) {
       key = pressedRotation ? "t" : "r";
     } else {
       key = pressedRotation ? ";" : "l";
