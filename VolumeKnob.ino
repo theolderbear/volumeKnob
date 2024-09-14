@@ -79,6 +79,7 @@ void setup() {
 }
 
 void loop() {
+  scheduledLog();
   printRotationStatus();
   setBatteryLevel();
   bleConnection();
@@ -224,6 +225,15 @@ void printRotationStatus() {
   if (!rotationTestMessage.equals(currentRotationTestMessage)) {
     Serial.println(currentRotationTestMessage);
     rotationTestMessage = currentRotationTestMessage;
+  }
+}
+
+long scheduledLogMillis = 0;
+void scheduledLog() {
+  if (millis() - scheduledLogMillis > 5000) {
+    Serial.print("Mode : ");
+    Serial.println(currentMode);
+    scheduledLogMillis = millis();
   }
 }
 
