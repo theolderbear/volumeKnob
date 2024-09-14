@@ -28,13 +28,14 @@ const unsigned int MAX_ANALOG_READ = 4095;
 const unsigned int R1_V_DIVIDER = 5000;
 const unsigned int R2_V_DIVIDER = 5000;
 
+String rotationTestMessage = "";
+
 long batteryLevelMillis = 0;
 long paringStartMills = 0;
 long previousPos = 0;
 bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
-int batteryLevelTest = -1;  // Set to 50 to mock the battery
 
 enum Mode {
   VOLUME_SCREEN = 0,
@@ -63,6 +64,7 @@ BleKeyboard bleKeyboard("BearKnob");
 void setup() {
   delay(2000);
   Serial.begin(115200);
+  
   pinMode(buttonPin, INPUT_PULLUP);
   pinMode(rotaryPinA, INPUT);
   pinMode(rotaryPinB, INPUT);
@@ -75,17 +77,16 @@ void setup() {
   bleKeyboard.begin();
 }
 
-String rotTest = "";
 void loop() {
-  String currentRotTest = "" + String(digitalRead(rotaryPinA)) + " : " + String(digitalRead(rotaryPinB));
-  // Serial.println(currentRotTest);
-  if (!rotTest.equals(currentRotTest)) {
-    Serial.print(currentRotTest);
-    Serial.print(" ");
-    rotTest = currentRotTest;
-  }
+  printRotationStatus();
   setBatteryLevel();
+  paring();
+  checkRotation();
+  encoderButton.read();
+  rgbLed.light();
+}
 
+void paring() {
   if (currentMode != OFF && currentMode != PARING && !bleKeyboard.isConnected()) {
     beginParing();
   }
@@ -93,10 +94,6 @@ void loop() {
   if (currentMode == PARING && (bleKeyboard.isConnected() || (millis() - paringStartMills > PARING_TIME))) {
     endParing();
   }
-
-  checkRotation();
-  encoderButton.read();
-  rgbLed.light();
 }
 
 void setBatteryLevel() {
@@ -109,20 +106,13 @@ void setBatteryLevel() {
     } else if (batteryLevel < LOW_BATTERY_LEVEL) {
       rgbLed.on(BATTERY_DELAY, ORANGE);
     }
+
     bleKeyboard.setBatteryLevel(batteryLevel);
     batteryLevelMillis = millis();
   }
 }
 
 int getBatteryPercentage() {
-
-  if (batteryLevelTest != -1) {
-    batteryLevelTest = batteryLevelTest - 10;
-    if (batteryLevelTest < 0) {
-      batteryLevelTest = 50;
-    }
-    return batteryLevelTest;
-  }
 
   int dividePin = analogRead(batteryPin);
   float divideV = dividePin * MAX_PIN_VOLTAGE / MAX_ANALOG_READ;
@@ -221,6 +211,15 @@ void checkRotation() {
 
 bool encoderButtonPressed() {
   return !digitalRead(buttonPin);
+}
+
+void printRotationStatus() {
+  String currentRotationTestMessage = "" + String(digitalRead(rotaryPinA)) + " : " + String(digitalRead(rotaryPinB));
+  // Serial.println(currentRotationTestMessage);
+  if (!rotationTestMessage.equals(currentRotationTestMessage)) {
+    Serial.println(currentRotationTestMessage);
+    rotationTestMessage = currentRotationTestMessage;
+  }
 }
 
 void printBatteryLevel(int dividePin, float divideV, float v, int batteryLevel) {
