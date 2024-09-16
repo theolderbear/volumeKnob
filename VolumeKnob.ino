@@ -20,6 +20,9 @@ const int greenPin = 6;
 const int bluPin = 7;
 const int batteryPin = A0;
 
+const bool batteryLevelShowVolts = true;
+const bool printBatteryStatus = false;
+
 const float MAX_BATTERY_V = 6.20;
 const float MAX_BATTERY_V_DELTA = 4;
 const float MAX_PIN_VOLTAGE = 3.3;  // Max voltage that can be read from a pin
@@ -36,7 +39,6 @@ long previousPos = 0;
 bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
-bool batteryLevelShowVolts = false;
 
 enum Mode {
   VOLUME_SCREEN = 0,
@@ -220,6 +222,9 @@ bool encoderButtonPressed() {
 }
 
 void printRotationStatus() {
+
+  if (printBatteryStatus) return;
+
   String currentRotationTestMessage = "" + String(digitalRead(rotaryPinA)) + " : " + String(digitalRead(rotaryPinB));
   // Serial.println(currentRotationTestMessage);
   if (!rotationTestMessage.equals(currentRotationTestMessage)) {
