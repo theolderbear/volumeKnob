@@ -69,8 +69,6 @@ BleKeyboard bleKeyboard("BearKnob");
 void setup() {
   Serial.begin(115200);
   delay(2000);
-  
-  stopWifi();
 
   pinMode(buttonPin, INPUT_PULLUP);
   pinMode(rotaryPinA, INPUT);
@@ -82,10 +80,11 @@ void setup() {
 
   beginParing();
   bleKeyboard.begin();
-
 }
- 
+
 void loop() {
+  stopWifi();
+
   scheduledLog();
   printRotationStatus();
   setBatteryLevel();
@@ -117,11 +116,11 @@ int getBatteryPercentage() {
   float divideV = dividePin * MAX_PIN_VOLTAGE / MAX_ANALOG_READ;
   float v = divideV * (R1_V_DIVIDER + R2_V_DIVIDER) / R2_V_DIVIDER;
   int batteryLevel = 100 / (MAX_BATTERY_V - MAX_BATTERY_V_DELTA) * (v - MAX_BATTERY_V_DELTA);
-  
+
   if (batteryLevelShowVolts) {
-    batteryLevel = v * 10;  
+    batteryLevel = v * 10;
   }
-  
+
 
   if (batteryLevel < 0) {
     batteryLevel = 0;
@@ -213,9 +212,9 @@ void checkRotation() {
     String key = "null";
     pressedRotation = encoderButtonPressed();
     if (digitalRead(rotaryPinB) == pos) {
-      key = pressedRotation ? "t" : (currentMode == VOLUME_SCREEN ? "r": "g");
+      key = pressedRotation ? "t" : (currentMode == VOLUME_SCREEN ? "r" : "g");
     } else {
-      key = pressedRotation ? ";" : (currentMode == VOLUME_SCREEN ? "l": "h");
+      key = pressedRotation ? ";" : (currentMode == VOLUME_SCREEN ? "l" : "h");
     }
     bleKeyboard.print(key);
   }
