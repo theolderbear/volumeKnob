@@ -23,8 +23,8 @@ const int batteryPin = A0;
 const bool batteryLevelShowVolts = true;
 const bool printBatteryStatus = false;
 
-const float MAX_BATTERY_V = 6.20;
-const float MAX_BATTERY_V_DELTA = 4;
+const float MAX_BATTERY_V = 8.40;
+const float MAX_BATTERY_V_DELTA = 1.2;
 const float MAX_PIN_VOLTAGE = 3.3;  // Max voltage that can be read from a pin
 
 const unsigned int MAX_ANALOG_READ = 4095;
@@ -208,9 +208,9 @@ void checkRotation() {
     String key = "null";
     pressedRotation = encoderButtonPressed();
     if (digitalRead(rotaryPinB) == pos) {
-      key = pressedRotation ? "t" : "r";
+      key = pressedRotation ? "t" : (currentMode == VOLUME_SCREEN ? "r": "g");
     } else {
-      key = pressedRotation ? ";" : "l";
+      key = pressedRotation ? ";" : (currentMode == VOLUME_SCREEN ? "l": "h");
     }
     bleKeyboard.print(key);
   }
