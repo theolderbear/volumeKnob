@@ -36,6 +36,7 @@ const unsigned int R2_V_DIVIDER = 5000;
 String rotationTestMessage = "";
 
 long batteryLevelMillis = 0;
+long runningMillis = 0;
 long paringStartMills = 0;
 long previousPos = 0;
 bool pressedRotation = false;
@@ -80,11 +81,14 @@ void setup() {
 
   beginParing();
   bleKeyboard.begin();
+  runningMillis = millis();
+  gpio_pullup_en(GPIO_NUM_7);
+  gpio_wakeup_enable(GPIO_NUM_7, GPIO_INTR_LOW_LEVEL);
 }
 
 void loop() {
   stopWifi();
-
+  checkSleep();
   scheduledLog();
   printRotationStatus();
   setBatteryLevel();
@@ -92,6 +96,18 @@ void loop() {
   checkRotation();
   encoderButton.read();
   rgbLed.light();
+}
+
+void checkSleep() {
+  if (millis() - runningMillis > 10000) {
+    esp_sleep_enable_gpio_wakeup();
+    Serial.println("Going to light sleep.");
+    Serial.flush();
+    esp_light_sleep_start();
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_GPIO);
+    Serial.println("Wakeing up.");
+    runningMillis = millis();
+  }
 }
 
 void setBatteryLevel() {
