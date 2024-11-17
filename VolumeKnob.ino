@@ -2,6 +2,8 @@
 #include "BearRGBLed.h"
 #include "RGBColor.h"
 #include <BleKeyboard.h>
+#include "WiFi.h"
+#include "esp_wifi.h"
 
 const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
@@ -65,9 +67,11 @@ BearRGBLed rgbLed(redPin, greenPin, bluPin);
 BleKeyboard bleKeyboard("BearKnob");
 
 void setup() {
-  delay(2000);
   Serial.begin(115200);
+  delay(2000);
   
+  stopWifi();
+
   pinMode(buttonPin, INPUT_PULLUP);
   pinMode(rotaryPinA, INPUT);
   pinMode(rotaryPinB, INPUT);
@@ -78,8 +82,9 @@ void setup() {
 
   beginParing();
   bleKeyboard.begin();
-}
 
+}
+ 
 void loop() {
   scheduledLog();
   printRotationStatus();
@@ -251,4 +256,9 @@ void printBatteryLevel(int dividePin, float divideV, float v, int batteryLevel) 
   Serial.print(v);
   Serial.print(", % : ");
   Serial.println(batteryLevel);
+}
+
+void stopWifi() {
+  WiFi.mode(WIFI_OFF);
+  esp_wifi_stop();
 }
