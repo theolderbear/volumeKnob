@@ -15,7 +15,7 @@ const long LONG_PRSS_DELAY = 1000;
 const long PARING_TIME = 10000;
 const long BATTERY_LEVEL_TIME = 5000;//5 * 60 * 1000;  // How often to check battery level
 const long BATTERY_DELAY = 2000;  // How long the low battery alert should be held
-const long IDLE_TIMEOUT = 20000;  // How long the Knob will wait before sleeping
+const long IDLE_TIMEOUT = 5 * 60 * 1000;  // How long the Knob will wait before sleeping
 
 const int rotaryPinA = 3;
 const int rotaryPinB = 2;
@@ -120,6 +120,7 @@ void checkSleep() {
     }
     Serial.println("Going to light sleep.");
     Serial.flush();
+    rgbLed.off();
     esp_light_sleep_start();
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_GPIO);
     Serial.println("Wakeing up.");
