@@ -5,14 +5,17 @@
 #include "WiFi.h"
 #include "esp_wifi.h"
 
+const bool batteryLevelShowVolts = true;
+const bool printBatteryStatus = true;
+const bool disablerSleep = false;
+
 const long RIGHT_LEFT_DELAY = 100;
 const long BLINK_DELAY = 250;
 const long LONG_PRSS_DELAY = 1000;
 const long PARING_TIME = 10000;
-const long BATTERY_LEVEL_TIME = 5 * 60 * 1000;  // How often to check battery level
-const long CRITICAL_BATTERY_LEVEL = 10;
-const long LOW_BATTERY_LEVEL = 30;
+const long BATTERY_LEVEL_TIME = 5000;//5 * 60 * 1000;  // How often to check battery level
 const long BATTERY_DELAY = 2000;  // How long the low battery alert should be held
+const long IDLE_TIMEOUT = 20000;  // How long the Knob will wait before sleeping
 
 const int rotaryPinA = 3;
 const int rotaryPinB = 2;
@@ -22,16 +25,14 @@ const int greenPin = 6;
 const int bluPin = 7;
 const int batteryPin = A0;
 
-const bool batteryLevelShowVolts = true;
-const bool printBatteryStatus = false;
-
 const float MAX_BATTERY_V = 8.40;
-const float MAX_BATTERY_V_DELTA = 1.2;
-const float MAX_PIN_VOLTAGE = 3.3;  // Max voltage that can be read from a pin
+const float MID_BATTERY_V = 7.6;
+const float MIN_BATTERY_V = 7.2;
+const float MAX_PIN_VOLTAGE = 2.4;  // Max voltage that can be read from pin
 
-const unsigned int MAX_ANALOG_READ = 4095;
+const unsigned int MAX_ANALOG_READ = 2860;
 const unsigned int R1_V_DIVIDER = 5000;
-const unsigned int R2_V_DIVIDER = 5000;
+const unsigned int R2_V_DIVIDER = 2000;
 
 String rotationTestMessage = "";
 
@@ -42,6 +43,8 @@ long previousPos = 0;
 bool pressedRotation = false;
 bool ignoreSingleClick = false;
 bool paringRunnig = false;
+
+float batteryVoltage = 0;
 
 enum Mode {
   VOLUME_SCREEN = 0,
@@ -84,13 +87,13 @@ void setup() {
   runningMillis = millis();
   gpio_pullup_en(GPIO_NUM_7);
   gpio_wakeup_enable(GPIO_NUM_7, GPIO_INTR_LOW_LEVEL);
+  gpio_pullup_en(GPIO_NUM_5);
+  gpio_pullup_en(GPIO_NUM_6);
 }
 
 void loop() {
   stopWifi();
   checkSleep();
-  scheduledLog();
-  printRotationStatus();
   setBatteryLevel();
   bleConnection();
   checkRotation();
@@ -99,15 +102,33 @@ void loop() {
 }
 
 void checkSleep() {
-  if (millis() - runningMillis > 10000) {
+  if (disablerSleep) {
+    return;
+  }
+
+  if (millis() - runningMillis > IDLE_TIMEOUT) {
     esp_sleep_enable_gpio_wakeup();
+    if (digitalRead(rotaryPinA) == 0) {
+      gpio_wakeup_enable(GPIO_NUM_6, GPIO_INTR_HIGH_LEVEL);
+    } else {
+      gpio_wakeup_enable(GPIO_NUM_6, GPIO_INTR_LOW_LEVEL);
+    }
+    if (digitalRead(rotaryPinB) == 0) {
+      gpio_wakeup_enable(GPIO_NUM_5, GPIO_INTR_HIGH_LEVEL);
+    } else {
+      gpio_wakeup_enable(GPIO_NUM_5, GPIO_INTR_LOW_LEVEL);
+    }
     Serial.println("Going to light sleep.");
     Serial.flush();
     esp_light_sleep_start();
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_GPIO);
     Serial.println("Wakeing up.");
-    runningMillis = millis();
+    resetRunningMills();
   }
+}
+
+void resetRunningMills() {
+  runningMillis = millis();
 }
 
 void setBatteryLevel() {
@@ -115,9 +136,11 @@ void setBatteryLevel() {
 
     int batteryLevel = getBatteryPercentage();
 
-    if (batteryLevel < CRITICAL_BATTERY_LEVEL) {
+    if (batteryVoltage < MIN_BATTERY_V) {
       rgbLed.on(BATTERY_DELAY, RED);
-    } else if (batteryLevel < LOW_BATTERY_LEVEL) {
+      Serial.println("Deep Sleep.");
+      esp_deep_sleep_start();
+    } else if (batteryVoltage < MID_BATTERY_V) {
       rgbLed.on(BATTERY_DELAY, ORANGE);
     }
 
@@ -130,19 +153,19 @@ int getBatteryPercentage() {
 
   int dividePin = analogRead(batteryPin);
   float divideV = dividePin * MAX_PIN_VOLTAGE / MAX_ANALOG_READ;
-  float v = divideV * (R1_V_DIVIDER + R2_V_DIVIDER) / R2_V_DIVIDER;
-  int batteryLevel = 100 / (MAX_BATTERY_V - MAX_BATTERY_V_DELTA) * (v - MAX_BATTERY_V_DELTA);
+  batteryVoltage = divideV * (R1_V_DIVIDER + R2_V_DIVIDER) / R2_V_DIVIDER;
+  float MAX_BATTERY_V_DELTA = MAX_BATTERY_V - MIN_BATTERY_V;
+  int batteryLevel = 100 / (MAX_BATTERY_V - MAX_BATTERY_V_DELTA) * (batteryVoltage - MAX_BATTERY_V_DELTA);
 
   if (batteryLevelShowVolts) {
-    batteryLevel = v * 10;
+    batteryLevel = batteryVoltage * 10;
   }
-
 
   if (batteryLevel < 0) {
     batteryLevel = 0;
   }
 
-  printBatteryLevel(dividePin, divideV, v, batteryLevel);
+  printBatteryLevel(dividePin, divideV, batteryVoltage, batteryLevel);
   return batteryLevel;
 }
 
@@ -179,6 +202,7 @@ void endParing() {
 }
 
 void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern) {
+  resetRunningMills();
   if (currentMode == OFF) {
     beginParing();
     return;
@@ -225,6 +249,7 @@ void checkRotation() {
   }
 
   if (pos != previousPos) {
+    resetRunningMills();
     String key = "null";
     pressedRotation = encoderButtonPressed();
     if (digitalRead(rotaryPinB) == pos) {
@@ -239,27 +264,6 @@ void checkRotation() {
 
 bool encoderButtonPressed() {
   return !digitalRead(buttonPin);
-}
-
-void printRotationStatus() {
-
-  if (printBatteryStatus) return;
-
-  String currentRotationTestMessage = "" + String(digitalRead(rotaryPinA)) + " : " + String(digitalRead(rotaryPinB));
-  // Serial.println(currentRotationTestMessage);
-  if (!rotationTestMessage.equals(currentRotationTestMessage)) {
-    Serial.println(currentRotationTestMessage);
-    rotationTestMessage = currentRotationTestMessage;
-  }
-}
-
-long scheduledLogMillis = 0;
-void scheduledLog() {
-  if (millis() - scheduledLogMillis > 5000) {
-    Serial.print("Mode : ");
-    Serial.println(currentMode);
-    scheduledLogMillis = millis();
-  }
 }
 
 void printBatteryLevel(int dividePin, float divideV, float v, int batteryLevel) {
